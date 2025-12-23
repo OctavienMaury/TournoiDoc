@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Trophy, Globe, MapPin, TrendingUp, Medal, Crown, ChevronDown, ChevronUp, Check, RefreshCw, User, Gamepad2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Trophy, Globe, MapPin, TrendingUp, Medal, Crown, ChevronDown, ChevronUp, Check, RefreshCw, User, Gamepad2, MessageCircle, Send } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // ============================================
@@ -9,12 +9,12 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 // 2. Va dans Extensions > Apps Script et colle le code du fichier google-apps-script.js
 // 3. Déploie en tant qu'application web (accès: tout le monde)
 // 4. Copie l'URL et colle-la ici :
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwfMxL9KhLPcPBS8lmWK_rfciMs4CF9-mwCuRqRA2HBWDsMcqJwxw1HFjppN-Dk6fo/exec';
+const GOOGLE_SCRIPT_URL = 'COLLE_TON_URL_ICI';
 // ============================================
 
 const PARTICIPANTS = [
   { id: 1, name: 'Antoine', color: '#ef4444' },
-  { id: 2, name: 'Florian', color: '#f97316' },
+  { id: 2, name: 'Floflo Fierry Foudon', color: '#f97316' },
   { id: 3, name: 'Irene', color: '#eab308' },
   { id: 4, name: 'Charlie', color: '#22c55e' },
   { id: 5, name: 'Illan', color: '#06b6d4' },
@@ -36,6 +36,13 @@ export default function GeoGuessrLeaderboard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  // Chat state
+  const [messages, setMessages] = useState([]);
+  const [chatPlayer, setChatPlayer] = useState(null);
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const chatEndRef = useRef(null);
+
   // Load scores from Google Sheets
   const loadScores = async () => {
     try {
@@ -51,6 +58,47 @@ export default function GeoGuessrLeaderboard() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load chat messages
+  const loadMessages = async () => {
+    try {
+      const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getMessages`);
+      const data = await response.json();
+      if (data.success) {
+        setMessages(data.messages || []);
+      }
+    } catch (err) {
+      console.error('Erreur chargement chat:', err);
+    }
+  };
+
+  // Send chat message
+  const sendMessage = async () => {
+    if (!chatPlayer || !newMessage.trim()) return;
+    
+    try {
+      setSendingMessage(true);
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'addMessage',
+          participantId: chatPlayer,
+          message: newMessage.trim(),
+          timestamp: new Date().toISOString()
+        }),
+      });
+      
+      setNewMessage('');
+      // Small delay then refresh
+      setTimeout(loadMessages, 500);
+    } catch (err) {
+      console.error('Erreur envoi message:', err);
+    } finally {
+      setSendingMessage(false);
     }
   };
 
@@ -85,11 +133,20 @@ export default function GeoGuessrLeaderboard() {
   useEffect(() => {
     if (GOOGLE_SCRIPT_URL !== 'COLLE_TON_URL_ICI') {
       loadScores();
+      loadMessages();
+      // Auto-refresh chat every 10 seconds
+      const interval = setInterval(loadMessages, 10000);
+      return () => clearInterval(interval);
     } else {
       setLoading(false);
       setError('Configure l\'URL Google Script dans le code (GOOGLE_SCRIPT_URL)');
     }
   }, []);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // Get score for a participant on a specific day
   const getScore = (participantId, day) => {
@@ -197,7 +254,18 @@ export default function GeoGuessrLeaderboard() {
     return score.toLocaleString('fr-FR');
   };
 
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
   const selectedParticipant = PARTICIPANTS.find(p => p.id === selectedPlayer);
+  const chatParticipant = PARTICIPANTS.find(p => p.id === chatPlayer);
 
   if (loading) {
     return (
@@ -429,6 +497,74 @@ export default function GeoGuessrLeaderboard() {
                 ))}
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Chat Section */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-slate-700">
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-purple-400" />
+            Chat du tournoi
+          </h3>
+
+          {/* Messages */}
+          <div className="bg-slate-900/50 rounded-lg p-4 h-64 overflow-y-auto mb-4">
+            {messages.length === 0 ? (
+              <p className="text-slate-500 text-center py-8">Aucun message pour l'instant. Sois le premier à écrire !</p>
+            ) : (
+              <div className="space-y-3">
+                {messages.map((msg, idx) => {
+                  const author = PARTICIPANTS.find(p => p.id === msg.participantId);
+                  return (
+                    <div key={idx} className="flex gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                        style={{ backgroundColor: author?.color || '#666' }}
+                      >
+                        {author?.name?.charAt(0) || '?'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-medium text-white">{author?.name || 'Inconnu'}</span>
+                          <span className="text-xs text-slate-500">{formatTime(msg.timestamp)}</span>
+                        </div>
+                        <p className="text-slate-300 text-sm">{msg.message}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={chatEndRef} />
+              </div>
+            )}
+          </div>
+
+          {/* Message Input */}
+          <div className="flex gap-3">
+            <select
+              value={chatPlayer || ''}
+              onChange={(e) => setChatPlayer(e.target.value ? parseInt(e.target.value) : null)}
+              className="px-3 py-2 bg-purple-600 rounded-lg text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer"
+            >
+              <option value="" className="bg-slate-800">Qui es-tu ?</option>
+              {PARTICIPANTS.map(p => (
+                <option key={p.id} value={p.id} className="bg-slate-800">{p.name}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              placeholder="Ton message..."
+              className="flex-1 px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!chatPlayer || !newMessage.trim() || sendingMessage}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-all"
+            >
+              {sendingMessage ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 
