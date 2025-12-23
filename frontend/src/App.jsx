@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trophy, Globe, MapPin, TrendingUp, Medal, Crown, ChevronDown, ChevronUp, Check, RefreshCw, User, Gamepad2, MessageCircle, Send } from 'lucide-react';
+import { Trophy, Globe, MapPin, TrendingUp, Medal, Crown, ChevronDown, ChevronUp, Check, RefreshCw, User, Gamepad2, MessageCircle, Send, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // ============================================
@@ -9,7 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 // 2. Va dans Extensions > Apps Script et colle le code du fichier google-apps-script.js
 // 3. Déploie en tant qu'application web (accès: tout le monde)
 // 4. Copie l'URL et colle-la ici :
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCVvI3ZiNEgmf1ickeqZxch_lySrIxTzsI3DWfoJc9wwcfS_cme0403uPa9iK78fOg/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbfPrMCmhTpISaiGwmN_3Owa4XS0WTOoYH84z1-jXocbkpJ88HiLR99ND4oKcRameV/exec';
 // ============================================
 
 const PARTICIPANTS = [
@@ -27,6 +27,295 @@ const pointsDistribution = { 1: 10, 2: 7, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1 };
 const MAX_DAILY_SCORE = 15000;
 const TOTAL_DAYS = 14;
 
+// Konami Code: ↑↑↓↓←→←→BA
+const KONAMI_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+
+// ============================================
+// SNAKE GAME COMPONENT (POPUP)
+// ============================================
+function SnakeGame({ onClose, participants, googleScriptUrl }) {
+  const [gameOver, setGameOver] = useState(false);
+  const [score, setScore] = useState(0);
+  const [snake, setSnake] = useState([{ x: 7, y: 7 }]);
+  const [food, setFood] = useState({ x: 12, y: 7 });
+  const [direction, setDirection] = useState({ x: 1, y: 0 });
+  const [gameStarted, setGameStarted] = useState(false);
+  const [snakePlayer, setSnakePlayer] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
+  const directionRef = useRef({ x: 1, y: 0 });
+
+  const GRID_SIZE = 15;
+
+  // Load leaderboard from Google Sheets
+  const loadLeaderboard = async () => {
+    try {
+      setLoadingLeaderboard(true);
+      const response = await fetch(`${googleScriptUrl}?action=getSnakeScores`);
+      const data = await response.json();
+      if (data.success) {
+        setLeaderboard(data.scores || []);
+      }
+    } catch (err) {
+      console.error('Erreur chargement leaderboard Snake:', err);
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLeaderboard();
+  }, []);
+
+  // Save score to Google Sheets
+  const saveToLeaderboard = async (participantId, finalScore) => {
+    try {
+      await fetch(googleScriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'addSnakeScore',
+          participantId,
+          score: finalScore,
+          timestamp: new Date().toISOString()
+        }),
+      });
+      // Reload leaderboard after saving
+      setTimeout(loadLeaderboard, 500);
+    } catch (err) {
+      console.error('Erreur sauvegarde score Snake:', err);
+    }
+  };
+
+  // Spawn food in a valid position
+  const spawnFood = (currentSnake) => {
+    let newFood;
+    do {
+      newFood = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE),
+      };
+    } while (currentSnake.some(s => s.x === newFood.x && s.y === newFood.y));
+    return newFood;
+  };
+
+  const resetGame = () => {
+    const initialSnake = [{ x: 7, y: 7 }];
+    setSnake(initialSnake);
+    setDirection({ x: 1, y: 0 });
+    directionRef.current = { x: 1, y: 0 };
+    setFood(spawnFood(initialSnake));
+    setGameOver(false);
+    setScore(0);
+    setGameStarted(true);
+  };
+
+  // Handle keyboard
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        if (!gameStarted && !gameOver && snakePlayer) {
+          setGameStarted(true);
+        }
+        
+        const current = directionRef.current;
+        let newDir = current;
+        
+        switch (e.key) {
+          case 'ArrowUp':
+            if (current.y !== 1) newDir = { x: 0, y: -1 };
+            break;
+          case 'ArrowDown':
+            if (current.y !== -1) newDir = { x: 0, y: 1 };
+            break;
+          case 'ArrowLeft':
+            if (current.x !== 1) newDir = { x: -1, y: 0 };
+            break;
+          case 'ArrowRight':
+            if (current.x !== -1) newDir = { x: 1, y: 0 };
+            break;
+        }
+        
+        directionRef.current = newDir;
+        setDirection(newDir);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gameStarted, gameOver, snakePlayer]);
+
+  // Game loop
+  useEffect(() => {
+    if (gameOver || !gameStarted) return;
+
+    const interval = setInterval(() => {
+      setSnake(prevSnake => {
+        const dir = directionRef.current;
+        const newHead = {
+          x: (prevSnake[0].x + dir.x + GRID_SIZE) % GRID_SIZE,
+          y: (prevSnake[0].y + dir.y + GRID_SIZE) % GRID_SIZE,
+        };
+
+        // Check self collision
+        if (prevSnake.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
+          setGameOver(true);
+          if (score > 0) {
+            saveToLeaderboard(snakePlayer, score);
+          }
+          return prevSnake;
+        }
+
+        const newSnake = [newHead, ...prevSnake];
+
+        // Check food collision
+        if (newHead.x === food.x && newHead.y === food.y) {
+          setScore(prev => prev + 10);
+          setFood(spawnFood(newSnake));
+        } else {
+          newSnake.pop();
+        }
+
+        return newSnake;
+      });
+    }, 130);
+
+    return () => clearInterval(interval);
+  }, [gameOver, gameStarted, food, score, snakePlayer]);
+
+  const getCellContent = (x, y) => {
+    const isHead = snake[0].x === x && snake[0].y === y;
+    const isBody = snake.slice(1).some(s => s.x === x && s.y === y);
+    const isFood = food.x === x && food.y === y;
+    
+    if (isHead) return 'bg-green-500 rounded-sm';
+    if (isBody) return 'bg-green-400';
+    if (isFood) return 'bg-red-500 rounded-full';
+    return 'bg-slate-800';
+  };
+
+  const getPlayerName = (participantId) => {
+    return participants.find(p => p.id === participantId)?.name || 'Unknown';
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div 
+        className="bg-slate-900 p-4 rounded-2xl shadow-2xl border border-slate-700 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-green-400">🐍 Snake</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Player selection */}
+        {!snakePlayer && (
+          <div className="mb-4">
+            <p className="text-slate-400 text-sm mb-2">Choisis ton joueur :</p>
+            <div className="grid grid-cols-2 gap-2">
+              {participants.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => setSnakePlayer(p.id)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-600 bg-slate-800 text-slate-300 hover:border-green-500 hover:bg-slate-700 transition-all"
+                >
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color }} />
+                  <span className="text-sm">{p.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {snakePlayer && (
+          <>
+            <div className="flex justify-between mb-3 text-sm">
+              <span className="text-white font-bold">Score: {score}</span>
+              <span className="text-slate-400">
+                {getPlayerName(snakePlayer)}
+              </span>
+            </div>
+
+            <div 
+              className="grid gap-px bg-slate-700 p-px rounded-lg mx-auto"
+              style={{ 
+                gridTemplateColumns: `repeat(${GRID_SIZE}, 18px)`,
+                gridTemplateRows: `repeat(${GRID_SIZE}, 18px)`,
+              }}
+            >
+              {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => {
+                const x = i % GRID_SIZE;
+                const y = Math.floor(i / GRID_SIZE);
+                return (
+                  <div
+                    key={i}
+                    className={`${getCellContent(x, y)}`}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="mt-4 text-center">
+              {!gameStarted && !gameOver && (
+                <p className="text-slate-400 text-sm">Appuie sur une flèche pour jouer</p>
+              )}
+              {gameOver && (
+                <div>
+                  <p className="text-red-400 font-bold mb-2">Game Over! Score: {score}</p>
+                  <button
+                    onClick={resetGame}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold text-sm"
+                  >
+                    Rejouer
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Leaderboard */}
+        <div className="mt-6 border-t border-slate-700 pt-4">
+          <h3 className="text-lg font-bold text-yellow-400 mb-3">🏆 Leaderboard</h3>
+          {loadingLeaderboard ? (
+            <p className="text-slate-500 text-sm text-center">Chargement...</p>
+          ) : leaderboard.length === 0 ? (
+            <p className="text-slate-500 text-sm text-center">Aucun score pour l'instant</p>
+          ) : (
+            <div className="space-y-1">
+              {leaderboard.slice(0, 10).map((entry, idx) => (
+                <div 
+                  key={idx} 
+                  className={`flex justify-between items-center px-3 py-2 rounded-lg text-sm ${
+                    idx === 0 ? 'bg-yellow-500/20 text-yellow-300' :
+                    idx === 1 ? 'bg-slate-400/20 text-slate-300' :
+                    idx === 2 ? 'bg-amber-600/20 text-amber-400' :
+                    'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold w-6">{idx + 1}.</span>
+                    <span>{getPlayerName(entry.participantId)}</span>
+                  </div>
+                  <span className="font-bold">{entry.score}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
 export default function GeoGuessrLeaderboard() {
   const [scores, setScores] = useState([]);
   const [currentDay, setCurrentDay] = useState(1);
@@ -36,12 +325,38 @@ export default function GeoGuessrLeaderboard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  // Easter egg state
+  const [showSnake, setShowSnake] = useState(false);
+  const konamiIndexRef = useRef(0);
+
   // Chat state
   const [messages, setMessages] = useState([]);
   const [chatPlayer, setChatPlayer] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const chatEndRef = useRef(null);
+
+  // Konami code detection
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const expectedKey = KONAMI_CODE[konamiIndexRef.current];
+      if (e.key.toLowerCase() === expectedKey.toLowerCase()) {
+        konamiIndexRef.current++;
+        if (konamiIndexRef.current === KONAMI_CODE.length) {
+          setShowSnake(true);
+          konamiIndexRef.current = 0;
+        }
+      } else {
+        konamiIndexRef.current = 0;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // If Snake is active, show Snake popup
+  const snakePopup = showSnake ? <SnakeGame onClose={() => setShowSnake(false)} participants={PARTICIPANTS} googleScriptUrl={GOOGLE_SCRIPT_URL} /> : null;
 
   // Load scores from Google Sheets
   const loadScores = async () => {
@@ -280,6 +595,9 @@ export default function GeoGuessrLeaderboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-4 md:p-8">
+      {/* Snake Easter Egg Popup */}
+      {snakePopup}
+      
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
