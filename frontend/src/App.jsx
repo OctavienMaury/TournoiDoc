@@ -14,7 +14,7 @@ const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbfPrMCmhTpI
 
 const PARTICIPANTS = [
   { id: 1, name: 'Antoine', color: '#ef4444' },
-  { id: 2, name: 'Florian', color: '#f97316' },
+  { id: 2, name: 'Floflo Fierry Foudon', color: '#f97316' },
   { id: 3, name: 'Irene', color: '#eab308' },
   { id: 4, name: 'Charlie', color: '#22c55e' },
   { id: 5, name: 'Illan', color: '#06b6d4' },
@@ -337,17 +337,27 @@ export default function GeoGuessrLeaderboard() {
   const chatEndRef = useRef(null);
 
   // Konami code detection
+  // Konami code detection
   useEffect(() => {
     const handleKeyDown = (e) => {
       const expectedKey = KONAMI_CODE[konamiIndexRef.current];
-      if (e.key.toLowerCase() === expectedKey.toLowerCase()) {
+      const pressedKey = e.key;
+      
+      // Check if key matches (case insensitive for letters, exact for arrows)
+      const isMatch = pressedKey === expectedKey || 
+                      pressedKey.toLowerCase() === expectedKey.toLowerCase();
+      
+      if (isMatch) {
         konamiIndexRef.current++;
         if (konamiIndexRef.current === KONAMI_CODE.length) {
           setShowSnake(true);
           konamiIndexRef.current = 0;
         }
       } else {
-        konamiIndexRef.current = 0;
+        // Only reset if it's not a modifier key
+        if (!['Shift', 'Control', 'Alt', 'Meta'].includes(pressedKey)) {
+          konamiIndexRef.current = 0;
+        }
       }
     };
 
@@ -958,4 +968,4 @@ export default function GeoGuessrLeaderboard() {
       </div>
     </div>
   );
-}
+}https://script.google.com/macros/s/AKfycbwbfPrMCmhTpISaiGwmN_3Owa4XS0WTOoYH84z1-jXocbkpJ88HiLR99ND4oKcRameV/exec
