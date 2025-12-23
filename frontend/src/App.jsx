@@ -9,7 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 // 2. Va dans Extensions > Apps Script et colle le code du fichier google-apps-script.js
 // 3. Déploie en tant qu'application web (accès: tout le monde)
 // 4. Copie l'URL et colle-la ici :
-const GOOGLE_SCRIPT_URL = 'COLLE_TON_URL_ICI';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCVvI3ZiNEgmf1ickeqZxch_lySrIxTzsI3DWfoJc9wwcfS_cme0403uPa9iK78fOg/exec';
 // ============================================
 
 const PARTICIPANTS = [
