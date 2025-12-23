@@ -27,6 +27,21 @@ const pointsDistribution = { 1: 10, 2: 7, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1 };
 const MAX_DAILY_SCORE = 15000;
 const TOTAL_DAYS = 14;
 
+// Date de début du tournoi (MODIFIER ICI)
+// Format: année, mois (0-11), jour
+const TOURNAMENT_START_DATE = new Date(2024, 11, 22); // 22 décembre 2024
+
+// Calcule le jour actuel du tournoi
+const calculateCurrentDay = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(TOURNAMENT_START_DATE);
+  start.setHours(0, 0, 0, 0);
+  const diffTime = today - start;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  return Math.max(1, Math.min(TOTAL_DAYS, diffDays));
+};
+
 // Konami Code: ↑↑↓↓←→←→BA
 const KONAMI_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 
@@ -318,7 +333,7 @@ function SnakeGame({ onClose, participants, googleScriptUrl }) {
 // ============================================
 export default function GeoGuessrLeaderboard() {
   const [scores, setScores] = useState([]);
-  const [currentDay, setCurrentDay] = useState(1);
+  const [currentDay, setCurrentDay] = useState(calculateCurrentDay);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [playerScore, setPlayerScore] = useState('');
   const [loading, setLoading] = useState(true);
@@ -968,4 +983,4 @@ export default function GeoGuessrLeaderboard() {
       </div>
     </div>
   );
-}https://script.google.com/macros/s/AKfycbwbfPrMCmhTpISaiGwmN_3Owa4XS0WTOoYH84z1-jXocbkpJ88HiLR99ND4oKcRameV/exec
+}
