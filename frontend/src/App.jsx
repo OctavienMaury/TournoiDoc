@@ -14,7 +14,7 @@ const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCVvI3ZiNEgm
 
 const PARTICIPANTS = [
   { id: 1, name: 'Antoine', color: '#ef4444' },
-  { id: 2, name: 'Floflo Fierry Foudon', color: '#f97316' },
+  { id: 2, name: 'Florian', color: '#f97316' },
   { id: 3, name: 'Irene', color: '#eab308' },
   { id: 4, name: 'Charlie', color: '#22c55e' },
   { id: 5, name: 'Illan', color: '#06b6d4' },
