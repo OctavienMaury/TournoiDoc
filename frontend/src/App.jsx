@@ -16,7 +16,7 @@ const PARTICIPANTS = [
   { id: 1, name: 'Antoine', color: '#ef4444' },
   { id: 2, name: 'Florian', color: '#f97316' },
   { id: 3, name: 'Irene', color: '#eab308' },
-  { id: 4, name: 'Charlie', color: '#22c55e' },
+  { id: 4, name: 'Charlie x Papa', color: '#22c55e' },
   { id: 5, name: 'Illan', color: '#06b6d4' },
   { id: 6, name: 'Romane', color: '#3b82f6' },
   { id: 7, name: 'Enora', color: '#8b5cf6' },
@@ -29,7 +29,7 @@ const TOTAL_DAYS = 14;
 
 // Date de début du tournoi (MODIFIER ICI)
 // Format: année, mois (0-11), jour
-const TOURNAMENT_START_DATE = new Date(2025, 11, 22); // 22 décembre 2024
+const TOURNAMENT_START_DATE = new Date(2024, 11, 22); // 22 décembre 2024
 
 // Calcule le jour actuel du tournoi
 const calculateCurrentDay = () => {
@@ -494,18 +494,26 @@ export default function GeoGuessrLeaderboard() {
     return score ? score.geoScore : null;
   };
 
-  // Calculate tournament points for a day
+  // Calculate tournament points for a day (with tie handling)
   const calculateDayRankings = (day) => {
     const dayScores = PARTICIPANTS
       .map(p => ({ id: p.id, geoScore: getScore(p.id, day) }))
       .filter(p => p.geoScore !== null)
       .sort((a, b) => b.geoScore - a.geoScore);
     
-    return dayScores.map((p, idx) => ({
-      ...p,
-      rank: idx + 1,
-      tournamentPoints: pointsDistribution[idx + 1] || 0
-    }));
+    // Handle ties: same score = same rank = same points
+    let currentRank = 1;
+    return dayScores.map((p, idx) => {
+      // If not first and different score from previous, update rank
+      if (idx > 0 && p.geoScore < dayScores[idx - 1].geoScore) {
+        currentRank = idx + 1;
+      }
+      return {
+        ...p,
+        rank: currentRank,
+        tournamentPoints: pointsDistribution[currentRank] || 0
+      };
+    });
   };
 
   // Get tournament points for a participant on a day
