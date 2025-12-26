@@ -29,7 +29,7 @@ const TOTAL_DAYS = 14;
 
 // Date de début du tournoi (MODIFIER ICI)
 // Format: année, mois (0-11), jour
-const TOURNAMENT_START_DATE = new Date(2024, 11, 22); // 22 décembre 2024
+const TOURNAMENT_START_DATE = new Date(2025, 11, 22); // 22 décembre 2024
 
 // Calcule le jour actuel du tournoi
 const calculateCurrentDay = () => {
