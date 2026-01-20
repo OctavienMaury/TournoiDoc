@@ -14,8 +14,8 @@ const TOURNAMENTS = [
   {
     id: 'tournament_1',
     name: 'Tournoi #1 - Individuel',
-    startDate: new Date(2026, 01, 19),
-    endDate: new Date(2026, 01, 30),
+    startDate: new Date(2024, 11, 22),
+    endDate: new Date(2025, 0, 4),
     totalDays: 14,
     isTeamBased: false,
     participants: [
