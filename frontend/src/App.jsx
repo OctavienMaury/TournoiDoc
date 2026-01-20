@@ -80,7 +80,7 @@ function SnakeGame({ onClose, entities, googleScriptUrl, tournamentId }) {
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [snake, setSnake] = useState([{ x: 7, y: 7 }]);
-  const [food, setFood] = useState({ x: 12, y: 7 }]);
+  const [food, setFood] = useState({ x: 12, y: 7 });
   const [direction, setDirection] = useState({ x: 1, y: 0 });
   const [gameStarted, setGameStarted] = useState(false);
   const [snakePlayer, setSnakePlayer] = useState(null);
