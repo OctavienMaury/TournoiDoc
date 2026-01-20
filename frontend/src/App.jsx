@@ -27,7 +27,7 @@ const TOURNAMENTS = [
       { id: 6, name: 'Romane', color: '#3b82f6' },
       { id: 7, name: 'Enora', color: '#8b5cf6' },
       { id: 8, name: 'Octavien', color: '#ec4899' },
-      { id: 9, name: 'Ambre', color: '#ec4877' }
+      { id: 9, name: 'Ambre', color: '#ec4877' },
     ],
     pointsDistribution: { 1: 10, 2: 7, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1 },
     archived: true
