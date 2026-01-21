@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 // ============================================
 // CONFIGURATION GOOGLE SHEETS
 // ============================================
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyWYV60ldSuUGn4AOg3uV1lPV2A9pEVq2m2F2u8hNEeeEtby07uPqkJ0amXqowRlKiG/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHDFTviVGhuASKWUsQP1NSWkwD1hZIzNK9PoPrM0XuWVu1qq6vjFcOh64AjlpQBH80/exec';
 
 // ============================================
 // CONFIGURATION DES TOURNOIS
