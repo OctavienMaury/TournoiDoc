@@ -35,8 +35,8 @@ const TOURNAMENTS = [
   {
     id: 'tournament_2',
     name: 'Tournoi #2 - Équipes',
-    startDate: new Date(2025, 0, 20),
-    endDate: new Date(2025, 1, 7),
+    startDate: new Date(2026, 0, 20),
+    endDate: new Date(2026, 1, 7),
     totalDays: 14,
     skipWeekends: true,
     isTeamBased: true,
