@@ -41,10 +41,10 @@ const TOURNAMENTS = [
     skipWeekends: true,
     isTeamBased: true,
     teams: [
-      { id: 1, name: 'Équipe Alpha', color: '#ef4444', members: ['Antoine', 'Maxime', 'Irene'] },
+      { id: 1, name: 'Équipe AMI', color: '#ef4444', members: ['Antoine', 'Maxime', 'Irene'] },
       { id: 2, name: 'GéoBagarre', color: '#22c55e', members: ['Octavien', 'Ambre'] },
-      { id: 3, name: 'Équipe Gamma', color: '#3b82f6', members: ['Enora', 'Romane'] },
-      { id: 4, name: 'Équipe Delta', color: '#8b5cf6', members: ['Florian', 'Illan'] },
+      { id: 3, name: 'Équipe RE', color: '#3b82f6', members: ['Enora', 'Romane'] },
+      { id: 4, name: 'Équipe FI', color: '#8b5cf6', members: ['Florian', 'Illan'] },
     ],
     pointsDistribution: { 1: 10, 2: 7, 3: 5, 4: 4 },
     archived: false
